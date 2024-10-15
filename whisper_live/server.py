@@ -253,7 +253,7 @@ class TranscriptionServer:
         try:
             conn = mysql.connector.connect(**db_config)
             cursor = conn.cursor(buffered=True)
-            logging.info("Connected to mysql")
+            # logging.info("Connected to mysql")
 
             # Strip protocols and trailing path/slashes from origin_header
             normalized_origin = re.sub(r'^[http|https]+://', '', origin_header).rstrip('/')
@@ -264,7 +264,7 @@ class TranscriptionServer:
             cursor.execute(query_domain, values_domain)
             domain_id = cursor.fetchone()
 
-            logging.info(f"Domain id: {domain_id[0]}")
+            # logging.info(f"Domain id: {domain_id[0]}")
 
             if not domain_id:
                 logging.info(f"Connection closed: Domain '{normalized_origin}' not found")
@@ -282,7 +282,11 @@ class TranscriptionServer:
                 websocket.close(3003, "Forbidden: Invalid license key")
                 return False
 
-            logging.info(f"Authentication result: {license[0]}")
+            if license[4] != 1:
+                logging.info("Connection closed: License has not been activated for this site")
+                websocket.close(3003, "License has not been activated for this site")
+                return False
+
             logging.info("New client authorized")
             return True
 
@@ -310,9 +314,6 @@ class TranscriptionServer:
             return False
 
         origin_header = origin_header[0]
-
-        logging.info("origin_header: " + origin_header)
-        logging.info("token: " + token)
 
         if not self.is_authorized(websocket, origin_header, token):
             return False
