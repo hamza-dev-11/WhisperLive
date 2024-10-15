@@ -266,7 +266,7 @@ class TranscriptionServer:
 
         # Find domain ID in the domains table
         query = "SELECT id FROM domains WHERE domain = %s"
-        values = (origin_header)
+        values = (origin_header,)
         cursor.execute(query, values)
         domain_id = cursor.fetchone()
 
