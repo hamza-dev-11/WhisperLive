@@ -270,7 +270,9 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         
-        self.authenticate_new_connection(websocket)
+        authenticated = self.authenticate_new_connection(websocket)
+        if authenticated != True:
+            return authenticated;
 
         try:
             logging.info("New client connected")
