@@ -277,7 +277,7 @@ class TranscriptionServer:
             cursor.execute(query, values)
             result = cursor.fetchone()
 
-            logging.info(f"Authentication result: {result[0]}")
+            logging.info(f"Authentication result: {json.dumps(result[0])}")
 
             if result[0] > 0:
                 logging.info("New client authorized")
