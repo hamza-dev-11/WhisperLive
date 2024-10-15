@@ -248,8 +248,8 @@ class TranscriptionServer:
             return True
         except Exception as e:
             logging.error(f"Error during new connection authentication: {str(e)}")
-            # return False
-            return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
+            return False
+            # return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
@@ -277,8 +277,7 @@ class TranscriptionServer:
             return False
         except Exception as e:
             logging.error(f"Error during new connection initialization: {str(e)}")
-            # return False
-            return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
+            return False
 
     def process_audio_frames(self, websocket):
         frame_np = self.get_audio_from_websocket(websocket)
