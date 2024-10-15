@@ -275,16 +275,24 @@ class TranscriptionServer:
 
             logging.info("New client connected")
             options = websocket.recv()
+            logging.info("here 1")
             options = json.loads(options)
+            logging.info("here 2")
             self.use_vad = options.get('use_vad')
+            logging.info("here 3")
             if self.client_manager.is_server_full(websocket, options):
                 websocket.close()
                 return False  # Indicates that the connection should not continue
 
+            logging.info("here 4")
             if self.backend.is_tensorrt():
                 self.vad_detector = VoiceActivityDetector(frame_rate=self.RATE)
+
+            logging.info("here 5")
             self.initialize_client(websocket, options, faster_whisper_custom_model_path,
                                    whisper_tensorrt_path, trt_multilingual)
+            
+            logging.info("here 6")
             return True
         except json.JSONDecodeError:
             logging.error("Failed to decode JSON from client")
