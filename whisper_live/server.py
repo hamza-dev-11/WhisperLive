@@ -244,16 +244,18 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            self.client_manager.send_error(websocket, 401, "Unauthenticated: invalid credentials")
+            # self.client_manager.send_error(websocket, 401, "Unauthenticated: invalid credentials")
             # websocket.close(3000, "Unauthenticated: invalid credentials")
             # del websocket
+            websocket.respond(401, "Unauthenticated: invalid credentials")
             return False
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            self.client_manager.send_error(websocket, 403, "Forbidden: invalid credentials")
+            # self.client_manager.send_error(websocket, 403, "Forbidden: invalid credentials")
             # websocket.close(3003, "Forbidden: invalid credentials")
             # del websocket
+            websocket.respond(403, "Forbidden: invalid credentials")
             return False
         origin_header = origin_header[0]
 
@@ -267,9 +269,9 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            if not self.authenticate_new_connection(websocket):
-                websocket.close()
-                return False
+            # if not self.authenticate_new_connection(websocket):
+            #     websocket.close()
+            #     return False
 
             logging.info("New client connected")
             options = websocket.recv()
@@ -347,6 +349,8 @@ class TranscriptionServer:
         if not self.handle_new_connection(websocket, faster_whisper_custom_model_path,
                                           whisper_tensorrt_path, trt_multilingual):
             return
+
+        self.authenticate_new_connection(websocket)
 
         try:
             while not self.client_manager.is_client_timeout(websocket):
