@@ -222,8 +222,8 @@ class TranscriptionServer:
                               whisper_tensorrt_path, trt_multilingual):
         try:
             logging.info("New client connected")
-            logging.info(websocket.id)
-            logging.info(websocket.request)
+            logging.info(websocket.request.headers)
+            logging.info(websocket.request.headers.get_all('Origin'))
             options = websocket.recv()
             options = json.loads(options)
             self.use_vad = options.get('use_vad')
