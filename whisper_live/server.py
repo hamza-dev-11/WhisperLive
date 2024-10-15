@@ -275,17 +275,16 @@ class TranscriptionServer:
             query = "SELECT * FROM licenses WHERE domain_id = %s AND license_key = %s AND deleted_at IS null"
             values = (domain_id[0], token)  # Use the fetched domain ID
             cursor.execute(query, values)
-            result = cursor.fetchone()
+            license = cursor.fetchone()
 
-            logging.info(f"Authentication result: {json.dumps(result[0])}")
-
-            if result[0] > 0:
-                logging.info("New client authorized")
-                return True
-            else:
+            if not license:
                 logging.info("Connection closed: Invalid license key")
                 websocket.close(3003, "Forbidden: Invalid license key")
                 return False
+
+            logging.info(f"Authentication result: {json.dumps(license)}")
+            logging.info("New client authorized")
+            return True
 
         except mysql.connector.Error as err:
             logging.error(f"Database connection error: {err}")
