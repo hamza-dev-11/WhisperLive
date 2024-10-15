@@ -274,6 +274,8 @@ class TranscriptionServer:
             #     return False
 
             logging.info("New client connected")
+            logging.info("here 0")
+            logging.info(websocket)
             options = websocket.recv()
             logging.info("here 1")
             options = json.loads(options)
