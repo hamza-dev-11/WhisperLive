@@ -4,6 +4,7 @@ import threading
 import json
 import functools
 import logging
+import http
 import urllib.parse
 from enum import Enum
 from typing import List, Optional
@@ -247,8 +248,8 @@ class TranscriptionServer:
             return True
         except Exception as e:
             logging.error(f"Error during new connection authentication: {str(e)}")
-            websocket.close()
-            return False
+            # return False
+            return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
