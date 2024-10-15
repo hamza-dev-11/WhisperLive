@@ -342,7 +342,7 @@ class TranscriptionServer:
                     "Content-Type": "application/json",
                 }
             )
-            return Response(200, "OK", headers, {"error": "Unauthenticated: Invalid token"})
+            return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid token"}).encode('utf-8'))
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
@@ -354,7 +354,7 @@ class TranscriptionServer:
                     "Content-Type": "application/json",
                 }
             )
-            return Response(200, "OK", headers, {"error": "Unauthenticated: Invalid origin"})
+            return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid origin"}).encode('utf-8'))
         origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
