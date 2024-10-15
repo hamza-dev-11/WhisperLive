@@ -34,20 +34,10 @@ db_config = {
 try:
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor(buffered=True)
-    print("Connected to MySQL")
+    # print("Connected to MySQL")
 
     # Execute the SHOW PROCESSLIST query
-    cursor.execute("SHOW PROCESSLIST")
-    # cursor.reset()
-
-    # Iterate over the results and find idle connections
-    for row in cursor:
-        thread_id = row[0]
-        time = row[5]
-        if time > 300:  # 5 minutes in seconds
-            print(f"Terminating connection {thread_id}")
-            cursor.execute(f"KILL {thread_id}")
-            # cursor.reset()
+    cursor.execute("SET GLOBAL wait_timeout = 300;")
 
     # Close the connection
     cursor.close()
