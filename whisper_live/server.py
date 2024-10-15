@@ -35,9 +35,27 @@ try:
     conn = mysql.connector.connect(**db_config)
     cursor = conn.cursor()
     print("Connected to MySQL")
+
+    # Execute the SHOW PROCESSLIST query
+    cursor.execute("SHOW PROCESSLIST")
+
+    # Iterate over the results and find idle connections
+    for row in cursor:
+        thread_id = row[0]
+        time = row[5]
+        if time > 300:  # 5 minutes in seconds
+            print(f"Terminating connection {thread_id}")
+            cursor.execute(f"KILL {thread_id}")
+
+    # Close the connection
+    cursor.close()
+    conn.close()
 except mysql.connector.Error as err:
     print("Error connecting to MySQL:", err)
     exit()
+
+
+exit()
 
 logging.basicConfig(level=logging.INFO)
 
