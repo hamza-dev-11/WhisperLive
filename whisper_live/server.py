@@ -226,10 +226,11 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
-    def authenticate_new_connection(self, origin_header, token):
+    def authenticate_new_connection(self, origin_header, token, data):
         try:
             logging.info("origin_header: " + origin_header)
             logging.info("token: " + token)
+            logging.info(data)
 
             logging.info("New client authenticated")
 
