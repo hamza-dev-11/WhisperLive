@@ -14,6 +14,7 @@ import torch
 import numpy as np
 from websockets.sync.server import serve
 from websockets.exceptions import ConnectionClosed
+from websockets.datastructures import Headers
 from websockets.http11 import Response
 from whisper_live.vad import VoiceActivityDetector
 from whisper_live.transcriber import WhisperModel
@@ -333,20 +334,26 @@ class TranscriptionServer:
         token = get_query_param(websocket.request.path, "token")
         if token is None:
             # raise UnauthorizedException("Unauthenticated: Invalid token")
-            return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
-            # headers = Headers(
-            #     {
-            #         "Date": email.utils.formatdate(usegmt=True),
-            #         "Connection": "close",
-            #     }
-            # )
-            # return Response(200, "OK", headers, "Unauthenticated: Invalid token\n")
+            # return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
+            headers = Headers(
+                {
+                    "Date": email.utils.formatdate(usegmt=True),
+                    "Connection": "close",
+                }
+            )
+            return Response(200, "OK", headers, "Unauthenticated: Invalid token\n")
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
             # raise UnauthorizedException("Unauthenticated: Invalid origin")
-            return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid origin\n")
-        # origin_header = origin_header[0]
+            headers = Headers(
+                {
+                    "Date": email.utils.formatdate(usegmt=True),
+                    "Connection": "close",
+                }
+            )
+            return Response(200, "OK", headers, "Unauthenticated: Invalid origin\n")
+        origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
         logging.info("token: " + token)
