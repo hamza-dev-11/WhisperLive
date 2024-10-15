@@ -228,21 +228,18 @@ class TranscriptionServer:
 
     def authenticate_new_connection(self, websocket):
         try:
-            logging.info("here 1")
             token = get_query_param(websocket.request.path, "token")
-            logging.info("here 2")
             if token is None:
                 logging.error("Unauthenticated: Invalid token")
                 return False
-            
-            logging.info("here 3")
+
             origin_header = websocket.request.headers.get_all('Origin')
-            logging.info("here 4")
-            if origin_header is None:
+            if origin_header is None or len(origin_header) <= 0:
                 logging.error("Unauthenticated: Invalid origin")
                 return False
+            # origin_header = origin_header[0]
 
-            logging.info("origin_header: " + str(origin_header))
+            logging.info("origin_header: " + origin_header)
             logging.info("token: " + token)
 
             logging.info("New client authenticated")
@@ -250,6 +247,7 @@ class TranscriptionServer:
             return True
         except Exception as e:
             logging.error(f"Error during new connection authentication: {str(e)}")
+            websocket.close()
             return False
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
