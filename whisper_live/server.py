@@ -346,16 +346,13 @@ class TranscriptionServer:
 
         try:
             self.handle_new_connection(websocket, faster_whisper_custom_model_path, whisper_tensorrt_path, trt_multilingual)
-        except json.JSONDecodeError:
-            raise json.JSONDecodeError("Failed to decode JSON from client")
-        except ConnectionClosed:
-            raise ConnectionClosed("Connection closed by client")
-        except UnauthorizedException:
-            raise UnauthorizedException("Unauthorized: invalid credentials")
-        except ForbiddenException:
-            raise ForbiddenException("Unauthorized: forbidden")
         except Exception as e:
-            raise Exception(f"Error during new connection initialization: {str(e)}")
+            logging.error(str(e))
+            if self.client_manager.get_client(websocket):
+                self.cleanup(websocket)
+                websocket.close()
+            del websocket
+            return
 
         try:
             while not self.client_manager.is_client_timeout(websocket):
