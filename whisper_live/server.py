@@ -339,10 +339,9 @@ class TranscriptionServer:
                 {
                     "Date": email.utils.formatdate(usegmt=True),
                     "Connection": "close",
-                    "Content-Type": "application/json",
                 }
             )
-            return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid token"}).encode('utf-8'))
+            return Response(401, "Unauthenticated: Invalid token", headers)
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
@@ -351,10 +350,9 @@ class TranscriptionServer:
                 {
                     "Date": email.utils.formatdate(usegmt=True),
                     "Connection": "close",
-                    "Content-Type": "application/json",
                 }
             )
-            return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid origin"}).encode('utf-8'))
+            return Response(403, "Unauthenticated: Invalid origin", headers)
         origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
@@ -362,7 +360,7 @@ class TranscriptionServer:
 
         logging.info("New client authenticated")
 
-        return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid origin"}).encode('utf-8'))
+        return None
 
     def run(self,
             host,
