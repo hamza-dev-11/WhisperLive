@@ -328,7 +328,8 @@ class TranscriptionServer:
                 websocket.close()
             del websocket
 
-    def authenticate_new_connection(self, websocket):
+    def authenticate_new_connection(self, websocket, request):
+        logging.info(request)
         token = get_query_param(websocket.request.path, "token")
         if token is None:
             # raise UnauthorizedException("Unauthenticated: Invalid token")
