@@ -130,9 +130,9 @@ class ClientManager:
             return True
         return False
 
-    def respond(self, websocket, code, message):
+    def send_error(self, websocket, code, message):
         """
-        Respond with error through websocket 
+        Send error through websocket 
 
         Args:
             websocket: The websocket of the client attempting to connect.
@@ -142,7 +142,8 @@ class ClientManager:
         Returns:
             False
         """
-        websocket.respond(code, message)
+        response = {"uid": "123", "status": code, "message": message}
+        websocket.send(json.dumps(response))
         return False
 
 
@@ -243,14 +244,14 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            self.client_manager.respond(websocket, 401, "Unauthenticated: invalid credentials")
+            self.client_manager.send_error(websocket, 401, "Unauthenticated: invalid credentials")
             # websocket.close(3000, "Unauthenticated: invalid credentials")
             # del websocket
             return False
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            self.client_manager.respond(websocket, 403, "Forbidden: invalid credentials")
+            self.client_manager.send_error(websocket, 403, "Forbidden: invalid credentials")
             # websocket.close(3003, "Forbidden: invalid credentials")
             # del websocket
             return False
