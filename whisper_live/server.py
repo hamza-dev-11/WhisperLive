@@ -231,13 +231,11 @@ class TranscriptionServer:
         try:
             token = get_query_param(websocket.request.path, "token")
             if token is None:
-                logging.error("Unauthenticated: Invalid token")
-                return False
+                raise Exception("Unauthenticated: Invalid token")
 
-            origin_header = websocket.request.headers.get_all('Origin')
+            origin_header = websocket.request.headers.get_all('Origin2')
             if origin_header is None or len(origin_header) <= 0:
-                logging.error("Unauthenticated: Invalid origin")
-                return False
+                raise Exception("Unauthenticated: Invalid origin")
             # origin_header = origin_header[0]
 
             logging.info("origin_header: " + origin_header)
@@ -247,9 +245,7 @@ class TranscriptionServer:
 
             return True
         except Exception as e:
-            logging.error(f"Error during new connection authentication: {str(e)}")
-            return False
-            # return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
+            raise Exception(f"Error during new connection authentication: {str(e)}")
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
