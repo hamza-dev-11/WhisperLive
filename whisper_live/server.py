@@ -4,6 +4,7 @@ import threading
 import json
 import functools
 import logging
+import email.utils
 import http
 import urllib.parse
 from enum import Enum
@@ -13,6 +14,7 @@ import torch
 import numpy as np
 from websockets.sync.server import serve
 from websockets.exceptions import ConnectionClosed
+from websockets.http11 import Response
 from whisper_live.vad import VoiceActivityDetector
 from whisper_live.transcriber import WhisperModel
 try:
@@ -232,28 +234,9 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
-    def authenticate_new_connection(self, websocket):
-        token = get_query_param(websocket.request.path, "token")
-        if token is None:
-            raise UnauthorizedException("Unauthenticated: Invalid token")
-
-        origin_header = websocket.request.headers.get_all('Origin2')
-        if origin_header is None or len(origin_header) <= 0:
-            raise UnauthorizedException("Unauthenticated: Invalid origin")
-        # origin_header = origin_header[0]
-
-        logging.info("origin_header: " + origin_header)
-        logging.info("token: " + token)
-
-        logging.info("New client authenticated")
-
-        return True
-
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            self.authenticate_new_connection(websocket)
-
             logging.info("New client connected")
             options = websocket.recv()
             options = json.loads(options)
@@ -267,31 +250,15 @@ class TranscriptionServer:
             self.initialize_client(websocket, options, faster_whisper_custom_model_path,
                                    whisper_tensorrt_path, trt_multilingual)
             return True
-        # except json.JSONDecodeError:
-        #     logging.error("Failed to decode JSON from client")
-        #     return False
-        # except ConnectionClosed:
-        #     logging.info("Connection closed by client")
-        #     return False
-        # except UnauthorizedException:
-        #     logging.info("Unauthorized: invalid credentials")
-        #     return False
-        # except ForbiddenException:
-        #     logging.info("Unauthorized: forbidden")
-        #     return False
-        # except Exception as e:
-        #     logging.error(f"Error during new connection initialization: {str(e)}")
-        #     return False
         except json.JSONDecodeError:
-            raise json.JSONDecodeError("Failed to decode JSON from client")
+            logging.error("Failed to decode JSON from client")
+            return False
         except ConnectionClosed:
-            raise ConnectionClosed("Connection closed by client")
-        except UnauthorizedException:
-            raise UnauthorizedException("Unauthorized: invalid credentials")
-        except ForbiddenException:
-            raise ForbiddenException("Unauthorized: forbidden")
+            logging.info("Connection closed by client")
+            return False
         except Exception as e:
-            raise Exception(f"Error during new connection initialization: {str(e)}")
+            logging.error(f"Error during new connection initialization: {str(e)}")
+            return False
 
     def process_audio_frames(self, websocket):
         frame_np = self.get_audio_from_websocket(websocket)
@@ -343,18 +310,8 @@ class TranscriptionServer:
             Exception: If there is an error during the audio frame processing.
         """
         self.backend = backend
-
-        try:
-            self.handle_new_connection(websocket, faster_whisper_custom_model_path, whisper_tensorrt_path, trt_multilingual)
-        except Exception as e:
-            logging.error(str(e))
-            logging.info(websocket)
-            # websocket.respond(401, str(e))
-            websocket.send(f"401 Unauthorized: {str(e)}")
-            # if self.client_manager.get_client(websocket):
-            #     self.cleanup(websocket)
-            #     websocket.close()
-            # del websocket
+        if not self.handle_new_connection(websocket, faster_whisper_custom_model_path,
+                                          whisper_tensorrt_path, trt_multilingual):
             return
 
         try:
@@ -370,6 +327,32 @@ class TranscriptionServer:
                 self.cleanup(websocket)
                 websocket.close()
             del websocket
+
+    def authenticate_new_connection(self, websocket):
+        token = get_query_param(websocket.request.path, "token")
+        if token is None:
+            # raise UnauthorizedException("Unauthenticated: Invalid token")
+            return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
+            # headers = Headers(
+            #     {
+            #         "Date": email.utils.formatdate(usegmt=True),
+            #         "Connection": "close",
+            #     }
+            # )
+            # return Response(200, "OK", headers, "Unauthenticated: Invalid token\n")
+
+        origin_header = websocket.request.headers.get_all('Origin2')
+        if origin_header is None or len(origin_header) <= 0:
+            # raise UnauthorizedException("Unauthenticated: Invalid origin")
+            return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid origin\n")
+        # origin_header = origin_header[0]
+
+        logging.info("origin_header: " + origin_header)
+        logging.info("token: " + token)
+
+        logging.info("New client authenticated")
+
+        return None
 
     def run(self,
             host,
@@ -408,7 +391,8 @@ class TranscriptionServer:
                 trt_multilingual=trt_multilingual
             ),
             host,
-            port
+            port,
+            process_request=self.authenticate_new_connection
         ) as server:
             server.serve_forever()
 
