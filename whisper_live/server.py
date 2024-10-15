@@ -235,8 +235,43 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
+    def authenticate_new_connection(self, websocket):
+        token = get_query_param(websocket.request.path, "token")
+        if token is None:
+            # raise UnauthorizedException("Unauthenticated: Invalid token")
+            # return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
+            headers = Headers(
+                {
+                    "Date": email.utils.formatdate(usegmt=True),
+                    "Connection": "close",
+                }
+            )
+            return Response(401, "Unauthenticated: Invalid token", headers)
+
+        origin_header = websocket.request.headers.get_all('Origin2')
+        if origin_header is None or len(origin_header) <= 0:
+            # raise UnauthorizedException("Unauthenticated: Invalid origin")
+            headers = Headers(
+                {
+                    "Date": email.utils.formatdate(usegmt=True),
+                    "Connection": "close",
+                }
+            )
+            return Response(403, "Unauthenticated: Invalid origin", headers)
+        origin_header = origin_header[0]
+
+        logging.info("origin_header: " + origin_header)
+        logging.info("token: " + token)
+
+        logging.info("New client authenticated")
+
+        return True
+
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
+        
+        self.authenticate_new_connection(websocket)
+
         try:
             logging.info("New client connected")
             options = websocket.recv()
@@ -329,39 +364,6 @@ class TranscriptionServer:
                 websocket.close()
             del websocket
 
-    def authenticate_new_connection(self, websocket, request):
-        logging.info(request)
-        token = get_query_param(websocket.request.path, "token")
-        if token is None:
-            # raise UnauthorizedException("Unauthenticated: Invalid token")
-            # return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
-            headers = Headers(
-                {
-                    "Date": email.utils.formatdate(usegmt=True),
-                    "Connection": "close",
-                }
-            )
-            return Response(401, "Unauthenticated: Invalid token", headers)
-
-        origin_header = websocket.request.headers.get_all('Origin2')
-        if origin_header is None or len(origin_header) <= 0:
-            # raise UnauthorizedException("Unauthenticated: Invalid origin")
-            headers = Headers(
-                {
-                    "Date": email.utils.formatdate(usegmt=True),
-                    "Connection": "close",
-                }
-            )
-            return Response(403, "Unauthenticated: Invalid origin", headers)
-        origin_header = origin_header[0]
-
-        logging.info("origin_header: " + origin_header)
-        logging.info("token: " + token)
-
-        logging.info("New client authenticated")
-
-        return None
-
     def run(self,
             host,
             port=9090,
@@ -400,7 +402,6 @@ class TranscriptionServer:
             ),
             host,
             port,
-            process_request=self.authenticate_new_connection
         ) as server:
             server.serve_forever()
 
