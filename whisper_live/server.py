@@ -1,4 +1,7 @@
+import mysql.connector
+from dotenv import load_dotenv
 import os
+import re
 import time
 import threading
 import json
@@ -18,6 +21,23 @@ try:
     from whisper_live.transcriber_tensorrt import WhisperTRTLLM
 except Exception:
     pass
+
+load_dotenv()
+db_config = {
+    'host': os.environ.get('DB_HOST'),
+    'port': os.environ.get('DB_PORT'),
+    'user': os.environ.get('DB_USERNAME'),
+    'password': os.environ.get('DB_PASSWORD'),
+    'database': os.environ.get('DB_DATABASE')
+}
+
+try:
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
+    print("Connected to MySQL")
+except mysql.connector.Error as err:
+    print("Error connecting to MySQL:", err)
+    exit()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -228,26 +248,46 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            logging.info("Connection closed: token not found")
-            websocket.close(3000, "Unauthenticated: invalid credentials")
-            del websocket
+            logging.info("Connection closed: Token not found")
+            websocket.close(3000, "Unauthenticated: Invalid credentials")
             return False
 
         origin_header = websocket.request.headers.get_all('Origin')
         if origin_header is None or len(origin_header) <= 0:
-            logging.info("Connection closed: origin not found")
-            websocket.close(3000, "Unauthenticated: invalid credentials")
-            # websocket.close(3003, "Forbidden: invalid credentials")
-            del websocket
+            logging.info("Connection closed: Origin not found")
+            websocket.close(3000, "Unauthenticated: Invalid credentials")
             return False
+
         origin_header = origin_header[0]
+        origin_header = re.sub(r'^[http|https]+://', '', origin_header).rstrip('/')
 
         logging.info("origin_header: " + origin_header)
         logging.info("token: " + token)
 
-        logging.info("New client authenticated")
+        # Find domain ID in the domains table
+        query = "SELECT id FROM domains WHERE domain = %s"
+        values = (origin_header)
+        cursor.execute(query, values)
+        domain_id = cursor.fetchone()
 
-        return True
+        if not domain_id:
+            logging.info("Connection closed: Domain not found")
+            websocket.close(3003, "Forbidden: Invalid credentials")
+            return False
+        
+        # Check license key for the retrieved domain ID
+        query = "SELECT COUNT(*) FROM licenses WHERE domain_id = %s AND license_key = %s"
+        values = (domain_id[0], token)  # Use the fetched domain ID
+        cursor.execute(query, values)
+        result = cursor.fetchone()
+
+        if result[0] > 0:
+            logging.info("New client authorized")
+            return True
+        else:
+            logging.info("Connection closed: Invalid credentials")
+            websocket.close(3003, "Forbidden: Invalid credentials")
+            return False
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
