@@ -242,7 +242,7 @@ class TranscriptionServer:
                 logging.error("Unauthenticated: Invalid origin")
                 return False
 
-            logging.info("origin_header: " + origin_header)
+            logging.info("origin_header: " + str(origin_header))
             logging.info("token: " + token)
 
             logging.info("New client authenticated")
