@@ -228,12 +228,16 @@ class TranscriptionServer:
 
     def authenticate_new_connection(self, websocket):
         try:
+            logging.info("here 1")
             token = get_query_param(websocket.request.path, "token")
+            logging.info("here 2")
             if token is None:
                 logging.error("Unauthenticated: Invalid token")
                 return False
             
+            logging.info("here 3")
             origin_header = websocket.request.headers.get_all('Origin')
+            logging.info("here 4")
             if origin_header is None:
                 logging.error("Unauthenticated: Invalid origin")
                 return False
