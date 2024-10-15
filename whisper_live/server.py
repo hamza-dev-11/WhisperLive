@@ -259,7 +259,7 @@ class TranscriptionServer:
             normalized_origin = re.sub(r'^[http|https]+://', '', origin_header).rstrip('/')
 
             # Find domain ID in the domains table
-            query_domain = "SELECT id FROM domains WHERE domain = %s"
+            query_domain = "SELECT id FROM domains WHERE domain = %s AND deleted_at IS null"
             values_domain = (normalized_origin,)
             cursor.execute(query_domain, values_domain)
             domain_id = cursor.fetchone()
@@ -272,7 +272,7 @@ class TranscriptionServer:
                 return False
 
             # Check license key for the retrieved domain ID
-            query = "SELECT COUNT(*) FROM licenses WHERE domain_id = %s AND license_key = %s"
+            query = "SELECT * FROM licenses WHERE domain_id = %s AND license_key = %s AND deleted_at IS null"
             values = (domain_id[0], token)  # Use the fetched domain ID
             cursor.execute(query, values)
             result = cursor.fetchone()
