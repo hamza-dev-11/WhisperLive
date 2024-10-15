@@ -38,6 +38,7 @@ try:
 
     # Execute the SHOW PROCESSLIST query
     cursor.execute("SHOW PROCESSLIST")
+    cursor.reset()
 
     # Iterate over the results and find idle connections
     for row in cursor:
@@ -46,6 +47,7 @@ try:
         if time > 300:  # 5 minutes in seconds
             print(f"Terminating connection {thread_id}")
             cursor.execute(f"KILL {thread_id}")
+            cursor.reset()
 
     # Close the connection
     cursor.close()
