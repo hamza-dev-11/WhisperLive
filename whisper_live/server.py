@@ -277,7 +277,8 @@ class TranscriptionServer:
             return False
         except Exception as e:
             logging.error(f"Error during new connection initialization: {str(e)}")
-            return False
+            # return False
+            return websocket.respond(http.HTTPStatus.UNAUTHORIZED, "Invalid token\n")
 
     def process_audio_frames(self, websocket):
         frame_np = self.get_audio_from_websocket(websocket)
