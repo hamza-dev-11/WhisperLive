@@ -21,6 +21,13 @@ except Exception:
 logging.basicConfig(level=logging.INFO)
 
 
+def get_query_param(path, key):
+    query = urllib.parse.urlparse(path).query
+    params = urllib.parse.parse_qs(query)
+    values = params.get(key, [])
+    if len(values) == 1:
+        return values[0]
+    
 class ClientManager:
     def __init__(self, max_clients=4, max_connection_time=600):
         """
@@ -218,12 +225,11 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
-    def authenticate_new_connection(self, websocket):
+    def authenticate_new_connection(self, origin_header, token):
         try:
-            origin_header = websocket.request.headers.get_all('Origin')
-            
-            logging.info(websocket.request.headers)
             logging.info("origin_header: " + origin_header)
+            logging.info("token: " + token)
+
             logging.info("New client authenticated")
 
             return True
@@ -234,8 +240,17 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            logging.info(websocket.request.headers)
-            self.authenticate_new_connection(self, websocket)
+            token = get_query_param(websocket.request.path, "token")
+            if token is None:
+                logging.error("Unauthenticated: Invalid token")
+                return False
+            
+            origin_header = websocket.request.headers.get_all('Origin')
+            if origin_header is None:
+                logging.error("Unauthenticated: Invalid origin")
+                return False
+
+            self.authenticate_new_connection(self, origin_header, token)
 
             logging.info("New client connected")
             options = websocket.recv()
