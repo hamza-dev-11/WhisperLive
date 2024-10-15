@@ -234,30 +234,25 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            # raise UnauthorizedException("Unauthenticated: Invalid token")
-            return "Unauthenticated: Invalid token"
+            raise UnauthorizedException("Unauthenticated: Invalid token")
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            # raise UnauthorizedException("Unauthenticated: Invalid origin")
-            return "Unauthenticated: Invalid origin"
-        origin_header = origin_header[0]
+            raise UnauthorizedException("Unauthenticated: Invalid origin")
+        # origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
         logging.info("token: " + token)
 
         logging.info("New client authenticated")
 
-        return True
+        return None
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
-        
-        authenticated = self.authenticate_new_connection(websocket)
-        if authenticated != True:
-            return authenticated;
-
         try:
+            self.authenticate_new_connection(websocket)
+
             logging.info("New client connected")
             options = websocket.recv()
             options = json.loads(options)
@@ -276,6 +271,12 @@ class TranscriptionServer:
             return False
         except ConnectionClosed:
             logging.info("Connection closed by client")
+            return False
+        except UnauthorizedException:
+            logging.info("Unauthorized: invalid credentials")
+            return False
+        except ForbiddenException:
+            logging.info("Unauthorized: forbidden")
             return False
         except Exception as e:
             logging.error(f"Error during new connection initialization: {str(e)}")
@@ -386,7 +387,7 @@ class TranscriptionServer:
                 trt_multilingual=trt_multilingual
             ),
             host,
-            port,
+            port
         ) as server:
             server.serve_forever()
 
