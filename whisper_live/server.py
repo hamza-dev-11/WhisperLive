@@ -226,21 +226,7 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
-    def authenticate_new_connection(self, origin_header, token, data):
-        try:
-            logging.info("origin_header: " + origin_header)
-            logging.info("token: " + token)
-            logging.info(data)
-
-            logging.info("New client authenticated")
-
-            return True
-        except Exception as e:
-            logging.error(f"Error during new connection authentication: {str(e)}")
-            return False
-
-    def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
-                              whisper_tensorrt_path, trt_multilingual):
+    def authenticate_new_connection(self, websocket):
         try:
             token = get_query_param(websocket.request.path, "token")
             if token is None:
@@ -252,7 +238,20 @@ class TranscriptionServer:
                 logging.error("Unauthenticated: Invalid origin")
                 return False
 
-            self.authenticate_new_connection(self, origin_header, token)
+            logging.info("origin_header: " + origin_header)
+            logging.info("token: " + token)
+
+            logging.info("New client authenticated")
+
+            return True
+        except Exception as e:
+            logging.error(f"Error during new connection authentication: {str(e)}")
+            return False
+
+    def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
+                              whisper_tensorrt_path, trt_multilingual):
+        try:
+            self.authenticate_new_connection(websocket)
 
             logging.info("New client connected")
             options = websocket.recv()
