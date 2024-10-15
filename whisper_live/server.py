@@ -315,14 +315,14 @@ class TranscriptionServer:
 
         origin_header = origin_header[0]
 
-        # if not self.is_authorized(websocket, origin_header, token):
-        #     return False
+        if not self.is_authorized(websocket, origin_header, token):
+            return False
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            if not self.authenticate_new_connection(websocket):
-                return False
+            # if not self.authenticate_new_connection(websocket):
+            #     return False
 
             logging.info("New client connected")
             options = websocket.recv()
