@@ -130,6 +130,21 @@ class ClientManager:
             return True
         return False
 
+    def respond(self, websocket, code, message):
+        """
+        Respond with error through websocket 
+
+        Args:
+            websocket: The websocket of the client attempting to connect.
+            code: http code.
+            message: error response message.
+
+        Returns:
+            False
+        """
+        websocket.respond(code, message)
+        return False
+
 
 class BackendType(Enum):
     FASTER_WHISPER = "faster_whisper"
@@ -228,14 +243,16 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            websocket.close(3000, "Unauthenticated: invalid credentials")
-            del websocket
+            self.client_manager.respond(websocket, 401, "Unauthenticated: invalid credentials")
+            # websocket.close(3000, "Unauthenticated: invalid credentials")
+            # del websocket
             return False
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            websocket.close(3003, "Forbidden: invalid credentials")
-            del websocket
+            self.client_manager.respond(websocket, 403, "Forbidden: invalid credentials")
+            # websocket.close(3003, "Forbidden: invalid credentials")
+            # del websocket
             return False
         origin_header = origin_header[0]
 
@@ -244,12 +261,14 @@ class TranscriptionServer:
 
         logging.info("New client authenticated")
 
-        return None
+        return True
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            self.authenticate_new_connection(websocket)
+            if not self.authenticate_new_connection(websocket):
+                websocket.close()
+                return False
 
             logging.info("New client connected")
             options = websocket.recv()
