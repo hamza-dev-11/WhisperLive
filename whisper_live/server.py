@@ -269,6 +269,9 @@ class TranscriptionServer:
         values_domain = (origin_header,)
         cursor.execute(query_domain, values_domain)
         domain_id = cursor.fetchone()
+        cursor.reset()
+
+        logging.info("domain_id: " + domain_id)
 
         if not domain_id:
             logging.info("Connection closed: Domain not found")
@@ -280,6 +283,9 @@ class TranscriptionServer:
         values = (domain_id[0], token)  # Use the fetched domain ID
         cursor.execute(query, values)
         result = cursor.fetchone()
+        cursor.reset()
+
+        logging.info("result: " + str(result[0]))
 
         if result[0] > 0:
             logging.info("New client authorized")
