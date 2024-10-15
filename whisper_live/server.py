@@ -4,8 +4,6 @@ import threading
 import json
 import functools
 import logging
-import email.utils
-import http
 import urllib.parse
 from enum import Enum
 from typing import List, Optional
@@ -14,8 +12,6 @@ import torch
 import numpy as np
 from websockets.sync.server import serve
 from websockets.exceptions import ConnectionClosed
-from websockets.datastructures import Headers
-from websockets.http11 import Response
 from whisper_live.vad import VoiceActivityDetector
 from whisper_live.transcriber import WhisperModel
 try:
@@ -239,25 +235,12 @@ class TranscriptionServer:
         token = get_query_param(websocket.request.path, "token")
         if token is None:
             # raise UnauthorizedException("Unauthenticated: Invalid token")
-            # return websocket.respond(http.HTTPStatus.NOT_FOUND, "Unauthenticated: Invalid token\n")
-            headers = Headers(
-                {
-                    "Date": email.utils.formatdate(usegmt=True),
-                    "Connection": "close",
-                }
-            )
-            return Response(401, "Unauthenticated: Invalid token", headers)
+            return json.dump({"status": 401, "message": "Unauthenticated: Invalid token"})
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
             # raise UnauthorizedException("Unauthenticated: Invalid origin")
-            headers = Headers(
-                {
-                    "Date": email.utils.formatdate(usegmt=True),
-                    "Connection": "close",
-                }
-            )
-            return Response(403, "Unauthenticated: Invalid origin", headers)
+            return json.dump({"status": 403, "message": "Unauthenticated: Invalid origin"})
         origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
