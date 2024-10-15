@@ -21,12 +21,6 @@ except Exception:
 
 logging.basicConfig(level=logging.INFO)
 
-class UnauthorizedException(Exception):
-    pass
-
-class ForbiddenException(Exception):
-    pass
-
 def get_query_param(path, key):
     query = urllib.parse.urlparse(path).query
     params = urllib.parse.parse_qs(query)
@@ -234,12 +228,16 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            raise UnauthorizedException("Unauthenticated: Invalid token")
+            websocket.close(3000, "Unauthenticated: invalid credentials")
+            del websocket
+            return False
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            raise UnauthorizedException("Unauthenticated: Invalid origin")
-        # origin_header = origin_header[0]
+            websocket.close(3003, "Forbidden: invalid credentials")
+            del websocket
+            return False
+        origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
         logging.info("token: " + token)
@@ -251,7 +249,6 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            websocket.close(3000, "Unauthenticated: invalid credentials")
             self.authenticate_new_connection(websocket)
 
             logging.info("New client connected")
@@ -272,12 +269,6 @@ class TranscriptionServer:
             return False
         except ConnectionClosed:
             logging.info("Connection closed by client")
-            return False
-        except UnauthorizedException:
-            logging.info("Unauthenticated: invalid credentials")
-            return False
-        except ForbiddenException:
-            logging.info("Unauthorized: forbidden")
             return False
         except Exception as e:
             logging.error(f"Error during new connection initialization: {str(e)}")
