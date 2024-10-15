@@ -222,9 +222,9 @@ class TranscriptionServer:
                               whisper_tensorrt_path, trt_multilingual):
         try:
             logging.info("New client connected")
+            logging.info(websocket.id)
+            logging.info(websocket.request)
             options = websocket.recv()
-            logging.info("websocket: " + websocket)
-            logging.info("options: " + options)
             options = json.loads(options)
             self.use_vad = options.get('use_vad')
             if self.client_manager.is_server_full(websocket, options):

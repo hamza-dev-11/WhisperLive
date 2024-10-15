@@ -1,5 +1,7 @@
 # WhisperLive
 
+python3 run_server.py --port 5050 --backend faster_whisper -fw "/opt/dlami/nvme/faster-whisper-large-v3-turbo-ct2/model.bin"
+
 <h2 align="center">
   <a href="https://www.youtube.com/watch?v=0PHWCApIcCI"><img
 src="https://img.youtube.com/vi/0PHWCApIcCI/0.jpg" style="background-color:rgba(0,0,0,0);" height=300 alt="WhisperLive"></a>
