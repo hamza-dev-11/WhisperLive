@@ -218,12 +218,13 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
-    def authenticate_new_connection(self, websocket):
+    def authenticate_new_connection(self, websocket, data):
         try:
             origin_header = websocket.request.headers.get_all('Origin')
             
             logging.info(websocket.request.headers)
             logging.info("origin_header: " + origin_header)
+            logging.info(data)
             logging.info("New client authenticated")
 
             return True
