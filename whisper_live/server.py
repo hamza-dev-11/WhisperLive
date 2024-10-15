@@ -348,7 +348,8 @@ class TranscriptionServer:
             self.handle_new_connection(websocket, faster_whisper_custom_model_path, whisper_tensorrt_path, trt_multilingual)
         except Exception as e:
             logging.error(str(e))
-            self.websocket.respond(401, str(e))
+            logging.info(websocket)
+            websocket.respond(401, str(e))
             # if self.client_manager.get_client(websocket):
             #     self.cleanup(websocket)
             #     websocket.close()
