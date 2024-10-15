@@ -130,22 +130,6 @@ class ClientManager:
             return True
         return False
 
-    def send_error(self, websocket, code, message):
-        """
-        Send error through websocket 
-
-        Args:
-            websocket: The websocket of the client attempting to connect.
-            code: http code.
-            message: error response message.
-
-        Returns:
-            False
-        """
-        response = {"uid": "123", "status": code, "message": message}
-        websocket.send(json.dumps(response))
-        return False
-
 
 class BackendType(Enum):
     FASTER_WHISPER = "faster_whisper"
@@ -244,18 +228,14 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
-            # self.client_manager.send_error(websocket, 401, "Unauthenticated: invalid credentials")
-            # websocket.close(3000, "Unauthenticated: invalid credentials")
-            # del websocket
-            websocket.respond(401, "Unauthenticated: invalid credentials")
+            websocket.close(3000, "Unauthenticated: invalid credentials")
+            del websocket
             return False
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
-            # self.client_manager.send_error(websocket, 403, "Forbidden: invalid credentials")
-            # websocket.close(3003, "Forbidden: invalid credentials")
-            # del websocket
-            websocket.respond(403, "Forbidden: invalid credentials")
+            websocket.close(3003, "Forbidden: invalid credentials")
+            del websocket
             return False
         origin_header = origin_header[0]
 
@@ -269,32 +249,21 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
-            # if not self.authenticate_new_connection(websocket):
-            #     websocket.close()
-            #     return False
+            if not self.authenticate_new_connection(websocket):
+                return False
 
             logging.info("New client connected")
-            logging.info("here 0")
-            logging.info(websocket)
             options = websocket.recv()
-            logging.info("here 1")
             options = json.loads(options)
-            logging.info("here 2")
             self.use_vad = options.get('use_vad')
-            logging.info("here 3")
             if self.client_manager.is_server_full(websocket, options):
                 websocket.close()
                 return False  # Indicates that the connection should not continue
 
-            logging.info("here 4")
             if self.backend.is_tensorrt():
                 self.vad_detector = VoiceActivityDetector(frame_rate=self.RATE)
-
-            logging.info("here 5")
             self.initialize_client(websocket, options, faster_whisper_custom_model_path,
                                    whisper_tensorrt_path, trt_multilingual)
-            
-            logging.info("here 6")
             return True
         except json.JSONDecodeError:
             logging.error("Failed to decode JSON from client")
@@ -359,10 +328,6 @@ class TranscriptionServer:
         if not self.handle_new_connection(websocket, faster_whisper_custom_model_path,
                                           whisper_tensorrt_path, trt_multilingual):
             return
-
-        # logging.info("here")
-        # res = self.authenticate_new_connection(websocket)
-        # logging.info("res: " + str(res))
 
         try:
             while not self.client_manager.is_client_timeout(websocket):
