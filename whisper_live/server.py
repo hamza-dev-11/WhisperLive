@@ -362,7 +362,7 @@ class TranscriptionServer:
 
         logging.info("New client authenticated")
 
-        return None
+        return Response(200, "OK", headers, json.dumps({"error": "Unauthenticated: Invalid origin"}).encode('utf-8'))
 
     def run(self,
             host,
