@@ -218,12 +218,25 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
+    def authenticate_new_connection(self, websocket):
+        try:
+            origin_header = websocket.request.headers.get_all('Origin')
+            
+            logging.info(websocket.request.headers)
+            logging.info("origin_header: " + origin_header)
+            logging.info("New client authenticated")
+
+            return True
+        except Exception as e:
+            logging.error(f"Error during new connection authentication: {str(e)}")
+            return False
+
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
+            self.authenticate_new_connection(self, websocket)
+
             logging.info("New client connected")
-            logging.info(websocket.request.headers)
-            logging.info(websocket.request.headers.get_all('Origin'))
             options = websocket.recv()
             options = json.loads(options)
             self.use_vad = options.get('use_vad')
