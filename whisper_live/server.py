@@ -265,9 +265,9 @@ class TranscriptionServer:
         logging.info("token: " + token)
 
         # Find domain ID in the domains table
-        query = "SELECT id FROM domains WHERE domain = %s"
-        values = (origin_header,)
-        cursor.execute(query, values)
+        query_domain = "SELECT id FROM domains WHERE domain = %s"
+        values_domain = (origin_header,)
+        cursor.execute(query_domain, values_domain)
         domain_id = cursor.fetchone()
 
         if not domain_id:
