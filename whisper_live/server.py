@@ -235,12 +235,12 @@ class TranscriptionServer:
         token = get_query_param(websocket.request.path, "token")
         if token is None:
             # raise UnauthorizedException("Unauthenticated: Invalid token")
-            return json.dumps({"status": 401, "message": "Unauthenticated: Invalid token"})
+            return "Unauthenticated: Invalid token"
 
         origin_header = websocket.request.headers.get_all('Origin2')
         if origin_header is None or len(origin_header) <= 0:
             # raise UnauthorizedException("Unauthenticated: Invalid origin")
-            return json.dumps({"status": 403, "message": "Unauthenticated: Invalid origin"})
+            return "Unauthenticated: Invalid origin"
         origin_header = origin_header[0]
 
         logging.info("origin_header: " + origin_header)
