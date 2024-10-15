@@ -282,7 +282,7 @@ class TranscriptionServer:
                 websocket.close(3003, "Forbidden: Invalid license key")
                 return False
 
-            logging.info(f"Authentication result: {json.dumps(license)}")
+            logging.info(f"Authentication result: {license[0]}")
             logging.info("New client authorized")
             return True
 
