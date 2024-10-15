@@ -31,24 +31,6 @@ db_config = {
     'database': os.environ.get('DB_DATABASE')
 }
 
-try:
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor(buffered=True)
-    # print("Connected to MySQL")
-
-    # Execute the SHOW PROCESSLIST query
-    cursor.execute("SHOW PROCESSLIST;")
-
-    # Close the connection
-    cursor.close()
-    conn.close()
-except mysql.connector.Error as err:
-    print("Error connecting to MySQL:", err)
-    exit()
-
-
-exit()
-
 logging.basicConfig(level=logging.INFO)
 
 def get_query_param(path, key):
@@ -255,6 +237,64 @@ class TranscriptionServer:
             return False
         return np.frombuffer(frame_data, dtype=np.float32)
 
+    def is_authorized(self, websocket, origin_header, token):
+        """
+        Checks if the provided credentials (origin_header and token) are valid for authentication.
+
+        Args:
+            websocket: The WebSocket object representing the client connection.
+            origin_header: The origin header received from the client.
+            token: The authentication token provided by the client.
+
+        Returns:
+            True if the credentials are valid, False otherwise.
+        """
+
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor(buffered=True)
+            logging.info("Connected to mysql")
+
+            # Strip protocols and trailing path/slashes from origin_header
+            normalized_origin = re.sub(r'^[http|https]+://', '', origin_header).rstrip('/')
+
+            # Find domain ID in the domains table
+            query_domain = "SELECT id FROM domains WHERE domain = %s"
+            values_domain = (normalized_origin,)
+            cursor.execute(query_domain, values_domain)
+            domain_id = cursor.fetchone()
+
+            if not domain_id:
+                logging.info(f"Connection closed: Domain '{normalized_origin}' not found")
+                websocket.close(3003, "Forbidden: Domain not found")
+                return False
+
+            # Check license key for the retrieved domain ID
+            query = "SELECT COUNT(*) FROM licenses WHERE domain_id = %s AND license_key = %s"
+            values = (domain_id[0], token)  # Use the fetched domain ID
+            cursor.execute(query, values)
+            result = cursor.fetchone()
+
+            logging.info(f"Authentication result: {result[0]}")
+
+            if result[0] > 0:
+                logging.info("New client authorized")
+                return True
+            else:
+                logging.info("Connection closed: Invalid license key")
+                websocket.close(3003, "Forbidden: Invalid license key")
+                return False
+
+        except mysql.connector.Error as err:
+            logging.error(f"Database connection error: {err}")
+            websocket.close(1011, "Internal Server Error")
+            return False
+
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
+
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
@@ -269,40 +309,11 @@ class TranscriptionServer:
             return False
 
         origin_header = origin_header[0]
-        origin_header = re.sub(r'^[http|https]+://', '', origin_header).rstrip('/')
 
         logging.info("origin_header: " + origin_header)
         logging.info("token: " + token)
 
-        # Find domain ID in the domains table
-        query_domain = "SELECT id FROM domains WHERE domain = %s"
-        values_domain = (origin_header,)
-        cursor.execute(query_domain, values_domain)
-        domain_id = cursor.fetchone()
-        cursor.reset()
-
-        logging.info("domain_id: " + domain_id)
-
-        if not domain_id:
-            logging.info("Connection closed: Domain not found")
-            websocket.close(3003, "Forbidden: Invalid credentials")
-            return False
-        
-        # Check license key for the retrieved domain ID
-        query = "SELECT COUNT(*) FROM licenses WHERE domain_id = %s AND license_key = %s"
-        values = (domain_id[0], token)  # Use the fetched domain ID
-        cursor.execute(query, values)
-        result = cursor.fetchone()
-        cursor.reset()
-
-        logging.info("result: " + str(result[0]))
-
-        if result[0] > 0:
-            logging.info("New client authorized")
-            return True
-        else:
-            logging.info("Connection closed: Invalid credentials")
-            websocket.close(3003, "Forbidden: Invalid credentials")
+        if not self.is_authorized(websocket, origin_header, token):
             return False
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
