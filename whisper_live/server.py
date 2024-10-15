@@ -350,12 +350,11 @@ class TranscriptionServer:
             logging.error(str(e))
             logging.info(websocket)
             # websocket.respond(401, str(e))
-            # websocket.send(f"401 Unauthorized: {str(e)}")
-            return {"error": str(e), "status": 401}
-            # if self.client_manager.get_client(websocket):
-            #     self.cleanup(websocket)
-            #     websocket.close()
-            # del websocket
+            websocket.send(f"401 Unauthorized: {str(e)}")
+            if self.client_manager.get_client(websocket):
+                self.cleanup(websocket)
+                websocket.close()
+            del websocket
             return
 
         try:
