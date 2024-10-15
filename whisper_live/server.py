@@ -268,7 +268,7 @@ class TranscriptionServer:
 
             if not domain_id:
                 logging.info(f"Connection closed: Domain '{normalized_origin}' not found")
-                websocket.close(3003, "Forbidden: Domain not found")
+                websocket.close(3003, "Domain not found")
                 return False
 
             # Check license key for the retrieved domain ID
@@ -279,7 +279,7 @@ class TranscriptionServer:
 
             if not license:
                 logging.info("Connection closed: Invalid license key")
-                websocket.close(3003, "Forbidden: Invalid license key")
+                websocket.close(3003, "Invalid license key")
                 return False
 
             if license[4] != 1:
@@ -304,13 +304,13 @@ class TranscriptionServer:
         token = get_query_param(websocket.request.path, "token")
         if token is None:
             logging.info("Connection closed: Token not found")
-            websocket.close(3000, "Unauthenticated: Invalid credentials")
+            websocket.close(3000, "Invalid credentials")
             return False
 
         origin_header = websocket.request.headers.get_all('Origin')
         if origin_header is None or len(origin_header) <= 0:
             logging.info("Connection closed: Origin not found")
-            websocket.close(3000, "Unauthenticated: Invalid credentials")
+            websocket.close(3000, "Invalid credentials")
             return False
 
         origin_header = origin_header[0]
@@ -329,7 +329,7 @@ class TranscriptionServer:
             options = json.loads(options)
             self.use_vad = options.get('use_vad')
             if self.client_manager.is_server_full(websocket, options):
-                websocket.close()
+                websocket.close(1000, "is_server_full")
                 return False  # Indicates that the connection should not continue
 
             if self.backend.is_tensorrt():
@@ -412,7 +412,7 @@ class TranscriptionServer:
         finally:
             if self.client_manager.get_client(websocket):
                 self.cleanup(websocket)
-                websocket.close()
+                websocket.close(1000, "cleanup")
             del websocket
 
     def run(self,
