@@ -315,8 +315,8 @@ class TranscriptionServer:
 
         origin_header = origin_header[0]
 
-        if not self.is_authorized(websocket, origin_header, token):
-            return False
+        # if not self.is_authorized(websocket, origin_header, token):
+        #     return False
 
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
@@ -329,7 +329,7 @@ class TranscriptionServer:
             options = json.loads(options)
             self.use_vad = options.get('use_vad')
             if self.client_manager.is_server_full(websocket, options):
-                websocket.close(1000, "is_server_full")
+                websocket.close()
                 return False  # Indicates that the connection should not continue
 
             if self.backend.is_tensorrt():
@@ -412,7 +412,7 @@ class TranscriptionServer:
         finally:
             if self.client_manager.get_client(websocket):
                 self.cleanup(websocket)
-                websocket.close(1000, "cleanup")
+                websocket.close()
             del websocket
 
     def run(self,
