@@ -264,6 +264,8 @@ class TranscriptionServer:
             cursor.execute(query_domain, values_domain)
             domain_id = cursor.fetchone()
 
+            logging.info(f"Domain id: {domain_id[0]}")
+
             if not domain_id:
                 logging.info(f"Connection closed: Domain '{normalized_origin}' not found")
                 websocket.close(3003, "Forbidden: Domain not found")
