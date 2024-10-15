@@ -350,7 +350,9 @@ class TranscriptionServer:
                                           whisper_tensorrt_path, trt_multilingual):
             return
 
-        self.authenticate_new_connection(websocket)
+        logging.info("here")
+        res = self.authenticate_new_connection(websocket)
+        logging.info("res: " + str(res))
 
         try:
             while not self.client_manager.is_client_timeout(websocket):
