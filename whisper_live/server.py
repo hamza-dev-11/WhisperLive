@@ -251,6 +251,7 @@ class TranscriptionServer:
     def handle_new_connection(self, websocket, faster_whisper_custom_model_path,
                               whisper_tensorrt_path, trt_multilingual):
         try:
+            websocket.respond(401, "Unauthenticated: invalid credentials")
             self.authenticate_new_connection(websocket)
 
             logging.info("New client connected")
@@ -273,7 +274,7 @@ class TranscriptionServer:
             logging.info("Connection closed by client")
             return False
         except UnauthorizedException:
-            logging.info("Unauthorized: invalid credentials")
+            logging.info("Unauthenticated: invalid credentials")
             return False
         except ForbiddenException:
             logging.info("Unauthorized: forbidden")
