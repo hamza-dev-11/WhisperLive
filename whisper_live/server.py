@@ -228,13 +228,16 @@ class TranscriptionServer:
     def authenticate_new_connection(self, websocket):
         token = get_query_param(websocket.request.path, "token")
         if token is None:
+            logging.info("Connection closed: token not found")
             websocket.close(3000, "Unauthenticated: invalid credentials")
             del websocket
             return False
 
-        origin_header = websocket.request.headers.get_all('Origin2')
+        origin_header = websocket.request.headers.get_all('Origin')
         if origin_header is None or len(origin_header) <= 0:
-            websocket.close(3003, "Forbidden: invalid credentials")
+            logging.info("Connection closed: origin not found")
+            websocket.close(3000, "Unauthenticated: invalid credentials")
+            # websocket.close(3003, "Forbidden: invalid credentials")
             del websocket
             return False
         origin_header = origin_header[0]
