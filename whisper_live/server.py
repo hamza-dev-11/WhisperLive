@@ -37,7 +37,7 @@ try:
     # print("Connected to MySQL")
 
     # Execute the SHOW PROCESSLIST query
-    cursor.execute("SET GLOBAL wait_timeout = 300;")
+    cursor.execute("SHOW PROCESSLIST;")
 
     # Close the connection
     cursor.close()
